@@ -31,12 +31,10 @@ pub(super) fn start_screen(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         let content_x = rail_rect.right() + 36.0;
         let content_rect = Rect::from_min_max(egui::pos2(content_x, area.top() + pad_y), egui::pos2(area.right() - pad_x, area.bottom() - 16.0));
 
-        // 1. Left Navigation Rail
         ui.scope_builder(egui::UiBuilder::new().max_rect(rail_rect), |ui| {
             render_start_rail(app, ui, rail_rect.width());
         });
 
-        // 2. Right Content Area (scrollable)
         ui.scope_builder(egui::UiBuilder::new().max_rect(content_rect), |ui| {
             egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
                 render_start_content(app, ui, &recent, content_rect.width());
@@ -45,37 +43,19 @@ pub(super) fn start_screen(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     }
 }
 
+fn open_new_document(app: &mut PhotocraftApp) {
+    let fields = app.new_document_fields();
+    app.ui.open_dialog(crate::state::DialogKind::NewDocument, fields);
+}
+
 fn render_start_actions_row(app: &mut PhotocraftApp, ui: &mut egui::Ui, avail_w: f32) {
-    let t = crate::theme::Tokens::get(ui.ctx());
-    let btn_w = ((avail_w - 12.0) / 2.0).clamp(0.0, 150.0);
+    let btn_w = ((avail_w - 8.0) / 2.0).clamp(0.0, 180.0);
 
     ui.horizontal(|ui| {
-        // [ New file ]
-        let new_label = tl!("New file");
-        let (new_rect, new_resp) = ui.allocate_exact_size(egui::vec2(btn_w, 32.0), Sense::click());
-        new_resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, new_label));
-        let new_resp = new_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
-        let new_bg = if new_resp.hovered() { egui::Color32::from_rgb(41, 131, 245) } else { egui::Color32::from_rgb(26, 115, 232) };
-        ui.painter().rect_filled(new_rect, 4.0, new_bg);
-        ui.painter().text(new_rect.center(), egui::Align2::CENTER_CENTER, new_label, crate::theme::semibold(13.0), egui::Color32::WHITE);
-        if new_resp.clicked() {
-            let fields = app.new_document_fields();
-            app.ui.open_dialog(crate::state::DialogKind::NewDocument, fields);
+        if crate::widgets::primary_button(ui, "New file", btn_w).clicked() {
+            open_new_document(app);
         }
-
-        ui.add_space(8.0);
-
-        // [ Open… ]
-        let open_label = tl!("Open…");
-        let (open_rect, open_resp) = ui.allocate_exact_size(egui::vec2(btn_w, 32.0), Sense::click());
-        open_resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, open_label));
-        let open_resp = open_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
-        if open_resp.hovered() {
-            ui.painter().rect_filled(open_rect, 4.0, t.hover);
-        }
-        ui.painter().rect_stroke(open_rect, 4.0, egui::Stroke::new(1.0, t.separator), egui::StrokeKind::Inside);
-        ui.painter().text(open_rect.center(), egui::Align2::CENTER_CENTER, open_label, crate::theme::semibold(13.0), t.text);
-        if open_resp.clicked() {
+        if crate::widgets::secondary_button(ui, "Open…", btn_w).clicked() {
             let _ = app.open_dialog_file();
         }
     });
@@ -83,55 +63,27 @@ fn render_start_actions_row(app: &mut PhotocraftApp, ui: &mut egui::Ui, avail_w:
 
 fn render_start_rail(app: &mut PhotocraftApp, ui: &mut egui::Ui, rail_w: f32) {
     let t = crate::theme::Tokens::get(ui.ctx());
+    let button_w = rail_w.min(150.0);
 
     ui.add_space(8.0);
-
-    // 1. [ New file ] button
-    let new_label = tl!("New file");
-    let (new_rect, new_resp) = ui.allocate_exact_size(egui::vec2(rail_w.min(130.0), 32.0), Sense::click());
-    new_resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, new_label));
-    let new_resp = new_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
-    let new_bg = if new_resp.hovered() { egui::Color32::from_rgb(41, 131, 245) } else { egui::Color32::from_rgb(26, 115, 232) };
-    ui.painter().rect_filled(new_rect, 4.0, new_bg);
-    ui.painter().text(new_rect.center(), egui::Align2::CENTER_CENTER, new_label, crate::theme::semibold(13.0), egui::Color32::WHITE);
-    if new_resp.clicked() {
-        let fields = app.new_document_fields();
-        app.ui.open_dialog(crate::state::DialogKind::NewDocument, fields);
+    if crate::widgets::primary_button(ui, "New file", button_w).clicked() {
+        open_new_document(app);
     }
-
     ui.add_space(8.0);
-
-    // 2. [ Open… ] button
-    let open_label = tl!("Open…");
-    let (open_rect, open_resp) = ui.allocate_exact_size(egui::vec2(rail_w.min(130.0), 30.0), Sense::click());
-    open_resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, open_label));
-    let open_resp = open_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
-    if open_resp.hovered() {
-        ui.painter().rect_filled(open_rect, 4.0, t.hover);
-    }
-    ui.painter().rect_stroke(open_rect, 4.0, egui::Stroke::new(1.0, t.separator), egui::StrokeKind::Inside);
-    ui.painter().text(open_rect.center(), egui::Align2::CENTER_CENTER, open_label, crate::theme::semibold(13.0), t.text);
-    if open_resp.clicked() {
+    if crate::widgets::secondary_button(ui, "Open…", button_w).clicked() {
         let _ = app.open_dialog_file();
     }
 
     ui.add_space(16.0);
-
-    // Separator line
     let sep_w = 150.0f32.min(rail_w);
     let (sep_rect, _) = ui.allocate_exact_size(egui::vec2(sep_w, 1.0), Sense::hover());
     ui.painter().line_segment([sep_rect.min, egui::pos2(sep_rect.max.x, sep_rect.min.y)], egui::Stroke::new(1.0, t.separator));
-
     ui.add_space(14.0);
 
-    // 3. "Home" Nav Item (Selected)
+    // Home hides the tab strip and options bar, so this entry is the way back to open documents.
     let (home_rect, home_resp) = ui.allocate_exact_size(egui::vec2(rail_w, 32.0), Sense::click());
     home_resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, tl!("Home")));
-    // Home hides the tab strip and options bar, so this entry is the way back to the open
-    // documents (with none open there is nothing behind Home).
-    if app.session.documents().is_empty() {
-        // Nothing to go back to.
-    } else if home_resp.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+    if !app.session.documents().is_empty() && home_resp.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
         app.ui.chrome.home = None;
     }
     let active_bar = Rect::from_min_size(egui::pos2(home_rect.left(), home_rect.center().y - 7.0), egui::vec2(1.5, 14.0));
@@ -141,8 +93,6 @@ fn render_start_rail(app: &mut PhotocraftApp, ui: &mut egui::Ui, rail_w: f32) {
     ui.painter().text(egui::pos2(home_rect.left() + 34.0, home_rect.center().y), egui::Align2::LEFT_CENTER, tl!("Home"), crate::theme::semibold(13.5), t.text);
 
     ui.add_space(4.0);
-
-    // 4. "Learn" Nav Item
     let (learn_rect, learn_resp) = ui.allocate_exact_size(egui::vec2(rail_w, 32.0), Sense::click());
     let learn_resp = learn_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
     learn_resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, tl!("Learn")));
@@ -163,15 +113,12 @@ fn render_start_rail(app: &mut PhotocraftApp, ui: &mut egui::Ui, rail_w: f32) {
         crate::links::open(app, ui.ctx(), crate::links::TUTORIALS);
     }
 
-    // 5. Bottom pinned community links
+    // External community links are separated from the actions used to start editing.
     let bottom_h = 100.0;
-    let avail_h = ui.available_height();
-    let spacer = (avail_h - bottom_h - 20.0).max(24.0);
+    let spacer = (ui.available_height() - bottom_h - 20.0).max(24.0);
     ui.add_space(spacer);
-
     let (b_sep_rect, _) = ui.allocate_exact_size(egui::vec2(sep_w, 1.0), Sense::hover());
     ui.painter().line_segment([b_sep_rect.min, egui::pos2(b_sep_rect.max.x, b_sep_rect.min.y)], egui::Stroke::new(1.0, t.separator));
-
     ui.add_space(8.0);
 
     render_rail_link(app, ui, rail_w, tl!("Website"), "link", crate::links::APP_PAGE);
@@ -199,26 +146,11 @@ fn render_start_content(app: &mut PhotocraftApp, ui: &mut egui::Ui, recent: &[St
     let t = crate::theme::Tokens::get(ui.ctx());
     ui.add_space(8.0);
 
-    // Top Row: [01] PhotoCraft
-    ui.horizontal(|ui| {
-        let badge_size = egui::vec2(24.0, 19.0);
-        let (badge_rect, _) = ui.allocate_exact_size(badge_size, Sense::hover());
-        ui.painter().rect_filled(badge_rect, 3.0, egui::Color32::from_rgb(26, 115, 232));
-        ui.painter().text(badge_rect.center(), egui::Align2::CENTER_CENTER, "01", crate::theme::semibold(10.5), egui::Color32::WHITE);
-
-        ui.add_space(10.0);
-
-        let title_galley = ui.painter().layout_no_wrap(tl!("PhotoCraft").into(), crate::theme::semibold(20.0), t.text);
-        let (title_r, _) = ui.allocate_exact_size(title_galley.size(), Sense::hover());
-        ui.painter().galley(title_r.min, title_galley, t.text);
-    });
-
+    ui.label(egui::RichText::new(tl!("PhotoCraft")).font(crate::theme::semibold(20.0)).color(t.text));
     ui.add_space(18.0);
 
-    // Hairline separator under header
     let (sep_r, _) = ui.allocate_exact_size(egui::vec2(content_w, 1.0), Sense::hover());
     ui.painter().line_segment([sep_r.min, egui::pos2(sep_r.max.x, sep_r.min.y)], egui::Stroke::new(1.0, t.separator));
-
     ui.add_space(24.0);
 
     if recent.is_empty() {
@@ -233,42 +165,71 @@ fn render_start_content(app: &mut PhotocraftApp, ui: &mut egui::Ui, recent: &[St
 fn render_first_run_content(app: &mut PhotocraftApp, ui: &mut egui::Ui, content_w: f32) {
     let t = crate::theme::Tokens::get(ui.ctx());
 
-    let drop_w = 540.0f32.min(content_w - 24.0);
+    // Make the next step explicit instead of relying on the entire drop area being clickable.
+    let content_width = content_w.max(0.0);
+    let drop_w = 540.0_f32.min((content_width - 24.0).max(0.0));
     let drop_h = 200.0;
-
-    // Center vertically in available content area
     let avail_h = ui.available_height();
-    let top_space = ((avail_h - drop_h) / 2.0 - 50.0).max(40.0);
-    ui.add_space(top_space);
+    ui.add_space(((avail_h - drop_h) / 2.0 - 70.0).max(24.0));
 
-    // Center horizontally across content_w
-    let pad_x = ((content_w - drop_w) / 2.0).max(0.0);
+    let pad_x = ((content_width - drop_w) / 2.0).max(0.0);
     ui.horizontal(|ui| {
         ui.add_space(pad_x);
-
         let (drop_r, drop_resp) = ui.allocate_exact_size(egui::vec2(drop_w, drop_h), Sense::click());
-        let drop_resp = drop_resp.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text(tl!("Open…"));
-        let is_hov = drop_resp.hovered();
+        let drop_resp = drop_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
+        let hovered = drop_resp.hovered();
 
-        let border_color = if is_hov { t.text_dim } else { t.separator };
-        let bg_color = if is_hov { t.hover } else { egui::Color32::TRANSPARENT };
-        ui.painter().rect_filled(drop_r, 8.0, bg_color);
-        ui.painter().rect_stroke(drop_r, 8.0, egui::Stroke::new(1.0, border_color), egui::StrokeKind::Inside);
-
-        // Centered icon & message
-        let icon_box = Rect::from_center_size(egui::pos2(drop_r.center().x, drop_r.center().y - 18.0), egui::vec2(40.0, 40.0));
-        crate::icons::paint(ui, icon_box, "image", 34.0, if is_hov { t.text } else { t.text_dim });
-
-        let drop_msg = start_screen_drop_hint(app);
-        ui.painter().text(
-            egui::pos2(drop_r.center().x, drop_r.center().y + 20.0),
-            egui::Align2::CENTER_CENTER,
-            drop_msg,
-            crate::theme::medium(14.0),
-            if is_hov { t.text } else { t.text_faint },
+        ui.painter().rect_filled(drop_r, 8.0, if hovered { t.hover } else { t.card });
+        ui.painter().rect_stroke(
+            drop_r,
+            8.0,
+            egui::Stroke::new(1.0, if hovered { t.accent } else { t.card_border }),
+            egui::StrokeKind::Inside,
         );
 
-        if drop_resp.clicked() {
+        let icon_box = Rect::from_center_size(egui::pos2(drop_r.center().x, drop_r.top() + 42.0), egui::vec2(40.0, 40.0));
+        crate::icons::paint(ui, icon_box, "image", 34.0, if hovered { t.text } else { t.text_dim });
+        ui.painter().text(
+            egui::pos2(drop_r.center().x, drop_r.top() + 82.0),
+            egui::Align2::CENTER_CENTER,
+            tl!("No recent files"),
+            crate::theme::semibold(15.0),
+            t.text,
+        );
+
+        // Show the primary action by name; dropping a file remains an optional shortcut.
+        let button_width = drop_r.width().min(180.0);
+        let button_rect = Rect::from_center_size(egui::pos2(drop_r.center().x, drop_r.top() + 126.0), egui::vec2(button_width, 30.0));
+        let button_resp = ui.interact(button_rect, drop_resp.id.with("open"), Sense::click());
+        button_resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, tl!("Open…")));
+        let button_fill = if button_resp.is_pointer_button_down_on() {
+            t.accent.gamma_multiply(0.82)
+        } else if button_resp.hovered() {
+            t.accent.gamma_multiply(0.9)
+        } else {
+            t.accent
+        };
+        ui.painter().rect_filled(button_rect, 6.0, button_fill);
+        ui.painter().text(button_rect.center(), egui::Align2::CENTER_CENTER, tl!("Open…"), crate::theme::semibold(13.0), t.primary_text);
+
+        let drop_msg = start_screen_drop_hint(app);
+        let job = egui::text::LayoutJob::simple(drop_msg.to_string(), egui::FontId::proportional(11.5), t.text_dim, (drop_r.width() - 24.0).max(0.0));
+        let galley = ui.painter().layout_job(job);
+        ui.painter().galley(egui::pos2(drop_r.center().x - galley.size().x / 2.0, drop_r.top() + 151.0), galley, t.text_dim);
+
+        if button_resp.clicked() || drop_resp.clicked() {
+            let _ = app.open_dialog_file();
+        }
+    });
+
+    ui.add_space(14.0);
+    ui.horizontal(|ui| {
+        ui.add_space(pad_x);
+        if crate::widgets::primary_button(ui, "New file", 150.0).clicked() {
+            open_new_document(app);
+        }
+        ui.add_space(8.0);
+        if crate::widgets::secondary_button(ui, "Open…", 150.0).clicked() {
             let _ = app.open_dialog_file();
         }
     });
